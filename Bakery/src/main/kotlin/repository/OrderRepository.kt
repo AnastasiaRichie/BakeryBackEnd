@@ -20,7 +20,6 @@ class OrderRepository {
             row[date] = order.date
             row[address] = order.address.addressId
             row[orderState] = order.orderState
-//            row[orderState] = OrderState.ORDERED
         }.value
         order.items.forEach { item ->
             OrderItems.insert { row ->

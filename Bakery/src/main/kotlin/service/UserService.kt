@@ -1,5 +1,6 @@
 package org.example.service
 
+import org.example.db.UserType
 import org.example.db.Users
 import org.example.exceptions.EmailAlreadyExistsException
 import org.example.exceptions.InvalidPasswordException
@@ -19,8 +20,8 @@ class UserService(private val repository: UserRepository, private val jwtService
         val exists = repository.findByEmail(email) != null
         if (exists) throw IllegalArgumentException("Пользователь с такой почтой уже существует")
 
-        val userId = repository.insertUser(firstName, lastName, email, hashedPassword)
-        return TokenResponse(jwtService.generateToken(userId.value), userId.value)
+        val userId = repository.insertUser(firstName, lastName, email, hashedPassword, getUserType(email))
+        return TokenResponse(jwtService.generateToken(userId.value), userId.value, getUserType(email))
     }
 
     fun login(email: String, password: String): UserResponse {
@@ -30,10 +31,28 @@ class UserService(private val repository: UserRepository, private val jwtService
         return UserResponse(
             token = jwtService.generateToken(user[Users.id].value),
             userId = user[Users.id].value,
+            userType = getUserType(email),
             email = user[Users.email],
             name = user[Users.firstName],
             lastName = user[Users.lastName]
         )
+    }
+
+    fun getUserByEmail(email: String): UserResponse {
+        val user = repository.findByEmail(email) ?: throw UserNotFoundException()
+        return UserResponse(
+            token = jwtService.generateToken(user[Users.id].value),
+            userId = user[Users.id].value,
+            userType = getUserType(email),
+            email = user[Users.email],
+            name = user[Users.firstName],
+            lastName = user[Users.lastName]
+        )
+    }
+
+    fun updateUserPassword(email: String, password: String) {
+        repository.findByEmail(email) ?: throw UserNotFoundException()
+        repository.updateUserPassword(email, BCrypt.hashpw(password, BCrypt.gensalt()))
     }
 
     fun updateUser(user: UpdateUserRequest, userId: Int): UpdateUserResponse {
@@ -56,9 +75,18 @@ class UserService(private val repository: UserRepository, private val jwtService
 
         return UpdateUserResponse(
             id = userId,
+            userType = getUserType(user.email.orEmpty()),
             email = updatedUser[Users.email],
             name = updatedUser[Users.firstName],
             lastName = updatedUser[Users.lastName],
         )
+    }
+}
+
+private fun getUserType(email: String): UserType {
+    return when {
+        email.contains("adm@bkr.team") -> UserType.ADMIN
+        email.contains("mngr@bkr.team") -> UserType.MANAGER
+        else -> UserType.USER
     }
 }

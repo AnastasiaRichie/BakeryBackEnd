@@ -6,4 +6,6 @@ import org.example.repository.ProductRepository
 class ProductService(private val repository: ProductRepository) {
 
     fun getProducts(): List<ProductModel> { return repository.getProducts() }
+
+    fun removeProduct(productId: Long): List<ProductModel> { return repository.removeProduct(productId) }
 }

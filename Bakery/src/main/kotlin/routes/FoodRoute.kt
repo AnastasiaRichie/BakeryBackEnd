@@ -8,7 +8,12 @@ import org.example.service.ProductService
 fun Route.productRoutes(productService: ProductService) {
 
     get("/products") {
-        val notes = productService.getProducts()
-        call.respond(notes)
+        val products = productService.getProducts()
+        call.respond(products)
+    }
+
+    post("product/{id}") {
+        val productId = call.parameters["id"]!!.toLong()
+        call.respond(productService.removeProduct(productId))
     }
 }

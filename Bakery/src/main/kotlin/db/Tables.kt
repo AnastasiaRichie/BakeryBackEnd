@@ -10,6 +10,7 @@ object Users : IntIdTable() {
     val lastName = varchar("last_name", 100)
     val email = varchar("email", 255).uniqueIndex()
     val password = varchar("password", 60)
+    val userType = enumerationByName(name = "user_type", length = 50, klass = UserType::class)
 }
 
 object CoffeeShopAddresses : IntIdTable() {
@@ -30,12 +31,20 @@ object Products : LongIdTable() {
     val imageName = varchar("image_name", 255)
     val productType = enumerationByName(name = "product_type", length = 50, klass = ProductType::class)
     val allergens = text("allergens_json")
+    val isActive = bool("is_active").default(true)
 }
 
 @Serializable
 enum class ProductType {
     FLOUR,
     DRINK
+}
+
+@Serializable
+enum class UserType {
+    USER,
+    MANAGER,
+    ADMIN
 }
 
 object Orders : LongIdTable("orders") {
@@ -50,7 +59,7 @@ object Orders : LongIdTable("orders") {
 object OrderItems : LongIdTable("order_items") {
 
     val orderItemId = reference("order_id", Orders, onDelete = ReferenceOption.CASCADE)
-    val productItemId = reference("product_id", Products)
+    val productItemId = reference("product_id", Products, onDelete = ReferenceOption.CASCADE)
     val quantity = integer("quantity")
 }
 

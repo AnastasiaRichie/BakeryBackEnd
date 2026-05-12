@@ -13,10 +13,7 @@ import io.ktor.server.routing.post
 import org.example.exceptions.EmailAlreadyExistsException
 import org.example.exceptions.InvalidPasswordException
 import org.example.exceptions.UserNotFoundException
-import org.example.models.ErrorResponse
-import org.example.models.LoginRequest
-import org.example.models.RegisterRequest
-import org.example.models.UpdateUserRequest
+import org.example.models.*
 import org.example.service.UserService
 
 fun Route.authRoutes(userService: UserService) {
@@ -38,6 +35,28 @@ fun Route.authRoutes(userService: UserService) {
             call.respond(HttpStatusCode.Unauthorized, ErrorResponse(e.message.orEmpty()))
         }
     }
+
+    post("/get-user-by-email") {
+        try {
+            val request = call.receive<EmailRequest>()
+            val user = userService.getUserByEmail(request.email)
+            call.respond(user)
+        } catch (e: UserNotFoundException) {
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message.orEmpty()))
+        }
+    }
+
+    patch("/update-user-pass") {
+        try {
+            val request = call.receive<UpdateUserPassRequest>()
+            userService.updateUserPassword(request.email, request.password)
+            call.respond(HttpStatusCode.OK)
+        } catch (e: UserNotFoundException) {
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message.orEmpty()))
+        }
+    }
+
+
     authenticate("auth-jwt") {
         patch("/update-user") {
             try {

@@ -1,5 +1,6 @@
 package org.example.repository
 
+import org.example.db.UserType
 import org.example.db.Users
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
@@ -13,12 +14,13 @@ class UserRepository {
         Users.selectAll().where { Users.email eq email }.singleOrNull()
     }
 
-    fun insertUser(firstName: String, lastName: String, email: String, hashedPassword: String) = transaction {
+    fun insertUser(firstName: String, lastName: String, email: String, hashedPassword: String, userType: UserType) = transaction {
         Users.insertAndGetId {
             it[Users.firstName] = firstName
             it[Users.lastName] = lastName
             it[Users.email] = email
             it[Users.password] = hashedPassword
+            it[Users.userType] = userType
         }
     }
 
@@ -30,5 +32,11 @@ class UserRepository {
             passwordHash?.let { user[Users.password] = it }
         }
         Users.select { Users.id eq userId }.single()
+    }
+
+    fun updateUserPassword(email: String, passwordHash: String) = transaction {
+        Users.update({ Users.email eq email }) { user ->
+            user[Users.password] = passwordHash
+        }
     }
 }

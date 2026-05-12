@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json
 import org.example.db.OrderState
 import org.example.db.ProductType
 import org.example.db.Products
+import org.example.db.UserType
 import org.jetbrains.exposed.sql.ResultRow
 
 @Serializable
@@ -12,11 +13,12 @@ data class RegisterRequest(val name: String, val lastName: String, val email: St
 @Serializable
 data class LoginRequest(val email: String, val password: String)
 @Serializable
-data class TokenResponse(val token: String, val userId: Int)
+data class TokenResponse(val token: String, val userId: Int, val userType: UserType)
 @Serializable
 data class UserResponse(
     val token: String,
     val userId: Int,
+    val userType: UserType,
     val email: String,
     val name: String,
     val lastName: String
@@ -31,6 +33,7 @@ data class UpdateUserRequest(
 @Serializable
 data class UpdateUserResponse(
     val id: Int,
+    val userType: UserType,
     val name: String,
     val lastName: String,
     val email: String
@@ -49,6 +52,7 @@ data class ProductModel(
     val price: String,
     val productImageName: String,
     val productType: ProductType,
+    val isActive: Boolean,
 )
 
 fun ResultRow.toProductModel() = ProductModel(
@@ -60,7 +64,8 @@ fun ResultRow.toProductModel() = ProductModel(
     allergens = Json.decodeFromString<List<String>>(this[Products.allergens]),
     price = "%.2f".format(this[Products.priceCents] / 100.0),
     productImageName = this[Products.imageName],
-    productType = this[Products.productType]
+    productType = this[Products.productType],
+    isActive = this[Products.isActive],
 )
 
 @Serializable
@@ -104,3 +109,12 @@ data class Address(
 
 @Serializable
 data class OrderIdModel(val orderId: Long)
+
+@Serializable
+data class EmailRequest(val email: String)
+
+@Serializable
+data class UpdateUserPassRequest(
+    val email: String,
+    val password: String
+)
