@@ -19,9 +19,13 @@ import org.example.service.UserService
 fun Route.authRoutes(userService: UserService) {
 
     post("/register") {
-        val request = call.receive<RegisterRequest>()
-        val tokenResponse = userService.register(request.name, request.lastName, request.email, request.password)
-        call.respond(tokenResponse)
+        try {
+            val request = call.receive<RegisterRequest>()
+            val tokenResponse = userService.register(request.name, request.lastName, request.email, request.password)
+            call.respond(tokenResponse)
+        } catch (e: EmailAlreadyExistsException) {
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message.orEmpty()))
+        }
     }
 
     post("/login") {

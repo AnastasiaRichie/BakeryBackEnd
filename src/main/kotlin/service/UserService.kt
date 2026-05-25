@@ -18,7 +18,7 @@ class UserService(private val repository: UserRepository, private val jwtService
         val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
 
         val exists = repository.findByEmail(email) != null
-        if (exists) throw IllegalArgumentException("Пользователь с такой почтой уже существует")
+        if (exists) throw EmailAlreadyExistsException()
 
         val userId = repository.insertUser(firstName, lastName, email, hashedPassword, getUserType(email))
         return TokenResponse(jwtService.generateToken(userId.value), userId.value, getUserType(email))

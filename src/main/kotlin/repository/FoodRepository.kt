@@ -10,7 +10,7 @@ import org.jetbrains.exposed.sql.update
 class ProductRepository {
 
     fun getProducts(): List<ProductModel> = transaction {
-        Products.selectAll().map { row -> row.toProductModel() }.filter { it.isActive }
+        Products.selectAll().map { row -> row.toProductModel() }
     }
 
     fun removeProduct(productId: Long) = transaction {
@@ -19,5 +19,15 @@ class ProductRepository {
         }
         getProducts()
     }
-}
 
+    fun returnBackProduct(productId: Long) = transaction {
+        Products.update({ Products.id eq productId }) {
+            it[isActive] = true
+        }
+        getProducts()
+    }
+
+    fun getUnavailable(): List<Long> = transaction {
+        Products.selectAll().map { row -> row.toProductModel() }.filter { !it.isActive }.map { it.productId }
+    }
+}
