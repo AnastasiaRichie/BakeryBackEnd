@@ -10,8 +10,12 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import org.example.exceptions.EmailAlreadyExistsException
+import org.example.exceptions.ProductNotAvailable
+import org.example.models.ErrorResponse
 import org.example.models.OrderIdModel
 import org.example.models.OrderRequest
+import org.example.models.RegisterRequest
 import org.example.service.OrderService
 
 fun Route.orderRoutes(orderService: OrderService) {
@@ -32,18 +36,31 @@ fun Route.orderRoutes(orderService: OrderService) {
         }
 
         post("/orders/{id}/reorder") {
-            val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")!!.asInt()
-            val orderId = call.parameters["id"]!!.toLong()
-            val newOrderId = orderService.reorder(orderId, userId)
-            call.respond(HttpStatusCode.Created, OrderIdModel(newOrderId))
+            try {
+                val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")!!.asInt()
+                val orderId = call.parameters["id"]!!.toLong()
+                val newOrderId = orderService.reorder(orderId, userId)
+                call.respond(HttpStatusCode.Created, OrderIdModel(newOrderId))
+            } catch (e: ProductNotAvailable) {
+                call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message.orEmpty()))
+            }
         }
 
         post("/order") {
-            val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asInt()
-            val order = call.receive<OrderRequest>()
-            val orderId = orderService.createOrder(order.copy(userId = userId))
-            call.respond(OrderIdModel(orderId))
+            try {
+                val userId = call.principal<JWTPrincipal>()!!.payload.getClaim("userId").asInt()
+                val order = call.receive<OrderRequest>()
+                val orderId = orderService.createOrder(order.copy(userId = userId))
+                call.respond(OrderIdModel(orderId))
+            } catch (e: ProductNotAvailable) {
+                call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message.orEmpty()))
+            }
         }
+    }
+
+    get("/all-orders") {
+        val orders = orderService.getOrders()
+        call.respond(orders)
     }
 
     get("/ordersByEmail") {

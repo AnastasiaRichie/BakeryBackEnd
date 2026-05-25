@@ -3,6 +3,7 @@ package org.example.repository
 import io.ktor.server.plugins.NotFoundException
 import org.example.WsSessionManager
 import org.example.db.*
+import org.example.exceptions.ProductNotAvailable
 import org.example.models.*
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.and
@@ -15,6 +16,12 @@ import org.jetbrains.exposed.sql.update
 class OrderRepository {
 
     fun createOrder(order: OrderRequest): Long = transaction {
+        val productIds = order.items.map { it.productId }
+        val inactiveProducts = Products
+            .selectAll()
+            .where { (Products.id inList productIds) and (Products.isActive eq false) }
+            .map { it[Products.name] }
+        if (inactiveProducts.isNotEmpty()) { throw ProductNotAvailable(inactiveProducts) }
         val orderId = Orders.insertAndGetId { row ->
             row[userOwnerId] = order.userId
             row[date] = order.date
@@ -54,6 +61,29 @@ class OrderRepository {
             }
     }
 
+    fun getOrders(): List<OrderResponse> = transaction {
+        (Orders innerJoin Users innerJoin CoffeeShopAddresses)
+            .selectAll()
+            .where { (Orders.orderState eq OrderState.ORDERED) }
+            .map { row ->
+                val orderId = row[Orders.id].value
+                val items = getItemsForOrder(orderId)
+                val address = Address(
+                    addressId = row[CoffeeShopAddresses.id].value,
+                    city = row[CoffeeShopAddresses.city],
+                    address = row[CoffeeShopAddresses.address]
+                )
+                OrderResponse(
+                    orderId = orderId,
+                    userId = row[Orders.userOwnerId].value,
+                    date = row[Orders.date],
+                    orderState = row[Orders.orderState],
+                    address = address,
+                    items = items
+                )
+            }
+    }
+
     fun getOrdersByEmail(email: String): List<OrderResponse> = transaction {
         (Orders innerJoin Users innerJoin CoffeeShopAddresses)
             .selectAll()
@@ -88,13 +118,15 @@ class OrderRepository {
         return transaction {
             val oldOrder = Orders.selectAll().where { (Orders.id eq orderId) and (Orders.userOwnerId eq userId) }.singleOrNull()
                 ?: throw NotFoundException("Заказ не найден")
+            val oldItems = OrderItems.innerJoin(Products).selectAll().where { OrderItems.orderItemId eq orderId }.toList()
+            val inactiveProducts = oldItems.filter { !it[Products.isActive] }.map { it[Products.name] }
+            if (inactiveProducts.isNotEmpty()) { throw ProductNotAvailable(inactiveProducts) }
             val newOrderId = Orders.insertAndGetId {
                 it[userOwnerId] = userId
                 it[address] = oldOrder[Orders.address]
                 it[date] = System.currentTimeMillis()
                 it[orderState] = OrderState.ORDERED
             }
-            val oldItems = OrderItems.selectAll().where { OrderItems.orderItemId eq orderId }.toList()
             oldItems.forEach { item ->
                 OrderItems.insert {
                     it[orderItemId] = newOrderId

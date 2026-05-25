@@ -16,4 +16,13 @@ fun Route.productRoutes(productService: ProductService) {
         val productId = call.parameters["id"]!!.toLong()
         call.respond(productService.removeProduct(productId))
     }
+
+    post("product/{id}/add") {
+        val productId = call.parameters["id"]!!.toLong()
+        call.respond(productService.returnBackProduct(productId))
+    }
+
+    get("products-unavailable") {
+        call.respond(productService.getUnavailable())
+    }
 }

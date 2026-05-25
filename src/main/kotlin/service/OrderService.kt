@@ -14,6 +14,10 @@ class OrderService(private val repository: OrderRepository) {
         return repository.getOrdersByUser(userId)
     }
 
+    fun getOrders(): List<OrderResponse> {
+        return repository.getOrders()
+    }
+
     fun getOrdersByEmail(email: String): List<OrderResponse> {
         return repository.getOrdersByEmail(email)
     }
