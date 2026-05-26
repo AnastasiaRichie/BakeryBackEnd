@@ -2,8 +2,8 @@ package org.example.repository
 
 import org.example.db.UserType
 import org.example.db.Users
-import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -38,5 +38,12 @@ class UserRepository {
         Users.update({ Users.email eq email }) { user ->
             user[Users.password] = passwordHash
         }
+    }
+
+    fun getUserIdsByType(userType: UserType): List<Int> = transaction {
+        Users
+            .select(Users.id)
+            .where { Users.userType eq userType }
+            .map { it[Users.id].value }
     }
 }

@@ -114,6 +114,14 @@ class OrderRepository {
             .singleOrNull()?.toOrderResponse(getItemsForOrder(orderId))
     }
 
+    fun getOrderByIdForManager(orderId: Long): OrderResponse? = transaction {
+        (Orders innerJoin CoffeeShopAddresses)
+            .selectAll()
+            .where { Orders.id eq orderId }
+            .singleOrNull()
+            ?.toOrderResponse(getItemsForOrder(orderId))
+    }
+
     fun reorder(orderId: Long, userId: Int): Long {
         return transaction {
             val oldOrder = Orders.selectAll().where { (Orders.id eq orderId) and (Orders.userOwnerId eq userId) }.singleOrNull()

@@ -111,6 +111,17 @@ data class Address(
 data class OrderIdModel(val orderId: Long)
 
 @Serializable
+enum class OrderWsEventType {
+    ORDER_CREATED,
+}
+
+@Serializable
+data class OrderWsEvent(
+    val type: OrderWsEventType,
+    val order: OrderResponse,
+)
+
+@Serializable
 data class EmailRequest(val email: String)
 
 @Serializable

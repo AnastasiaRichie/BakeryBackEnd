@@ -17,6 +17,6 @@ fun appModule(jwtConfig: JwtConfig) = module {
     single { OrderRepository() }
     single { ProductRepository() }
     single { UserService(get(), get()) }
-    single { OrderService(get()) }
+    single { OrderService(get(), get()) }
     single { ProductService(get()) }
 }
